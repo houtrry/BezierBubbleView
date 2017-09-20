@@ -40,6 +40,7 @@ public class UnreadBubbleView extends View {
     private float mTextY;
     private float mRadius;
     private PointF mCenterPoint = new PointF();
+    private double mDistance;
 
     public UnreadBubbleView(Context context) {
         this(context, null);
@@ -86,13 +87,13 @@ public class UnreadBubbleView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        Log.d(TAG, "onDraw: ("+mCurrentX+", "+mCurrentY+")");
+        Log.d(TAG, "onDraw: (" + mCurrentX + ", " + mCurrentY + ")");
         drawBubble(canvas);
         drawText(canvas);
     }
 
     private void drawBubble(Canvas canvas) {
-        Log.d(TAG, "drawBubble: ("+mCurrentX+", "+mCurrentY+"), "+mRadius+", ");
+        Log.d(TAG, "drawBubble: (" + mCurrentX + ", " + mCurrentY + "), " + mRadius + ", ");
         canvas.drawCircle(mCurrentX, mCurrentY, mRadius, mPaint);
     }
 
@@ -119,12 +120,12 @@ public class UnreadBubbleView extends View {
                 mCurrentX = event.getX();
                 mCurrentY = event.getY();
 
-                double distance = Math.hypot(mCurrentX - mCenterPoint.x, mCurrentY - mCenterPoint.y);
+                mDistance = Math.hypot(mCurrentX - mCenterPoint.x, mCurrentY - mCenterPoint.y);
 
-                if (distance > 2 * mRadius) {
+                if (mDistance > 2 * mRadius) {
 
                 } else {
-                    
+
                 }
 
                 ViewCompat.postInvalidateOnAnimation(this);
@@ -136,5 +137,10 @@ public class UnreadBubbleView extends View {
             }
         }
         return true;
+    }
+
+    public enum BubbleStatus {
+        STATUS_DISMISS,
+        STATUS_SHOW,
     }
 }
