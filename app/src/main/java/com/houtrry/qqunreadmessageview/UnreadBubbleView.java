@@ -191,11 +191,17 @@ public class UnreadBubbleView extends View {
 
     }
 
+    /**
+     * 画文字
+     * @param canvas
+     */
     private void drawText(Canvas canvas) {
-        mTextPaint.getTextBounds(mTextValue, 0, mTextValue.length(), mTextRect);
-        mTextX = currentPointF.x - mTextPaint.measureText(mTextValue) * 0.5f;
-        mTextY = currentPointF.y + mTextRect.height() * 0.5f;
-        canvas.drawText(String.valueOf(mTextValue), mTextX, mTextY, mTextPaint);
+        if (mBubbleStatus != BubbleStatus.STATUS_DISMISSED) {
+            mTextPaint.getTextBounds(mTextValue, 0, mTextValue.length(), mTextRect);
+            mTextX = currentPointF.x - mTextPaint.measureText(mTextValue) * 0.5f;
+            mTextY = currentPointF.y + mTextRect.height() * 0.5f;
+            canvas.drawText(String.valueOf(mTextValue), mTextX, mTextY, mTextPaint);
+        }
     }
 
     private float mDownX = 0;
