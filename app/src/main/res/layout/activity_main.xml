@@ -25,7 +25,6 @@
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
             android:layout_marginRight="20dp"
-            android:background="@android:color/holo_green_light"
             app:bubble_text="+99"/>
     </RelativeLayout>
 

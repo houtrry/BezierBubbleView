@@ -16,12 +16,9 @@ import android.support.annotation.NonNull;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.view.animation.FastOutLinearInInterpolator;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
-
-import static android.R.attr.mode;
 
 /**
  * @author houtrry
@@ -111,7 +108,7 @@ public class BezierBubbleView extends View {
         mTextValue = typedArray.getString(R.styleable.BezierBubbleView_bubble_text);
         mTextColor = typedArray.getColor(R.styleable.BezierBubbleView_text_color, mTextColor);
         mTextSize = typedArray.getDimensionPixelSize(R.styleable.BezierBubbleView_text_size, mTextSize);
-        mRadius = typedArray.getDimensionPixelSize(R.styleable.BezierBubbleView_circle_radius, 60);
+        mRadius = typedArray.getDimensionPixelSize(R.styleable.BezierBubbleView_circle_radius, 0);
         mBubblePadding = typedArray.getDimensionPixelSize(R.styleable.BezierBubbleView_bubble_padding, mBubblePadding);
         mMinSettledRadiusProportion = typedArray.getFloat(R.styleable.BezierBubbleView_min_settled_radius_proportion, mMinSettledRadiusProportion);
         mCriticalDistanceMultipleRadius = typedArray.getFloat(R.styleable.BezierBubbleView_critical_distance_multiple_radius, 0);
@@ -140,19 +137,17 @@ public class BezierBubbleView extends View {
         super.onSizeChanged(w, h, oldw, oldh);
         mWidth = w;
         mHeight = h;
-        mRadius = Math.max(mWidth, mHeight) * 0.5f;
+        if (mRadius == 0) {
+            mRadius = Math.max(mWidth, mHeight) * 0.5f;
+        }
         currentPointF.set(mRadius, mRadius);
         mCenterPoint.set(currentPointF);
-        mSettledRadius = mRadius * 0.6f;
         mCriticalDistance = mCriticalDistanceMultipleRadius * mRadius;
-
-        Log.d(TAG, "onSizeChanged: mWidth: "+mWidth+", mHeight: "+mHeight);
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-
+//        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         setMeasuredDimension(measureWidth(widthMeasureSpec), measureHeight(heightMeasureSpec));
     }
 
