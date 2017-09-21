@@ -6,25 +6,25 @@ import android.view.animation.Interpolator;
  * @author houtrry
  * @version $Rev$
  * @time 2017/9/20 19:20
- * @desc ${TODO}
+ * @desc 可以通过网站(http://inloop.github.io/interpolator/)查看不同的曲线的效果
  * @updateAuthor $Author$
  * @updateDate $Date$
  * @updateDesc $TODO$
  */
 
-public class QQInterpolator implements Interpolator {
+public class BezierBubbleInterpolator implements Interpolator {
 
-    /*
+    /**
     factor = 0.4
 pow(2, -10 * x) * sin((x - factor / 4) * (2 * PI) / factor) + 1
      */
 
     private float factor = 0.4f;
 
-    public QQInterpolator() {
+    public BezierBubbleInterpolator() {
     }
 
-    public QQInterpolator(float factor) {
+    public BezierBubbleInterpolator(float factor) {
         this.factor = factor;
     }
 

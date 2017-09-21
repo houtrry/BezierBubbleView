@@ -5,6 +5,7 @@ import android.graphics.PointF;
 
 /**
  * Created by houtrry on 2017/9/21.
+ * SDK里面有PointFEvaluator, 但是minsdk需要21, 因此, 重写一个
  */
 
 public class PointFEvaluator implements TypeEvaluator<PointF> {

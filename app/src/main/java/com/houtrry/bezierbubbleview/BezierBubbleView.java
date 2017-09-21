@@ -48,7 +48,7 @@ public class BezierBubbleView extends View {
     private float mSettledRadius;
     private PointF mCenterPoint = new PointF();
     private double mDistance;
-    private BubbleStatus mBubbleStatus = BubbleStatus.STATUS_IDLE;
+    private BezierBubbleStatus mBezierBubbleStatus = BezierBubbleStatus.STATUS_IDLE;
     private Path mBezierPath = new Path();
     private Bitmap mCurrentDismissingBitmap = null;
     /**
@@ -134,7 +134,7 @@ public class BezierBubbleView extends View {
      * @param canvas
      */
     private void drawSettledCircle(Canvas canvas) {
-        if ((mBubbleStatus == BubbleStatus.STATUS_CONNECT || mBubbleStatus == BubbleStatus.STATUS_RECOVER) && !mHasBeyondCriticalDistance) {
+        if ((mBezierBubbleStatus == BezierBubbleStatus.STATUS_CONNECT || mBezierBubbleStatus == BezierBubbleStatus.STATUS_RECOVER) && !mHasBeyondCriticalDistance) {
             mSettledRadius = (float) ((mMinSettledRadiusProportion + (1 - mDistance / mCriticalDistance) * (1 - mMinSettledRadiusProportion)) * mRadius);
             canvas.drawCircle(mCenterPoint.x, mCenterPoint.y, mSettledRadius, mPaint);
         }
@@ -146,7 +146,7 @@ public class BezierBubbleView extends View {
      * @param canvas
      */
     private void drawMoveCircle(Canvas canvas) {
-        if (mBubbleStatus != BubbleStatus.STATUS_DISMISSED && mBubbleStatus != BubbleStatus.STATUS_DISMISSING) {
+        if (mBezierBubbleStatus != BezierBubbleStatus.STATUS_DISMISSED && mBezierBubbleStatus != BezierBubbleStatus.STATUS_DISMISSING) {
             canvas.drawCircle(currentPointF.x, currentPointF.y, mRadius, mPaint);
         }
     }
@@ -157,7 +157,7 @@ public class BezierBubbleView extends View {
      * @param canvas
      */
     private void drawBezier(Canvas canvas) {
-        if ((mBubbleStatus == BubbleStatus.STATUS_CONNECT || mBubbleStatus == BubbleStatus.STATUS_RECOVER) && !mHasBeyondCriticalDistance) {
+        if ((mBezierBubbleStatus == BezierBubbleStatus.STATUS_CONNECT || mBezierBubbleStatus == BezierBubbleStatus.STATUS_RECOVER) && !mHasBeyondCriticalDistance) {
             mBezierPath.reset();
             calculateBezierPoints();
             mBezierPath.moveTo(mBezierPoints[1].x, mBezierPoints[1].y);
@@ -208,7 +208,7 @@ public class BezierBubbleView extends View {
      * @param canvas
      */
     private void drawText(Canvas canvas) {
-        if (mBubbleStatus != BubbleStatus.STATUS_DISMISSED && mBubbleStatus != BubbleStatus.STATUS_DISMISSING) {
+        if (mBezierBubbleStatus != BezierBubbleStatus.STATUS_DISMISSED && mBezierBubbleStatus != BezierBubbleStatus.STATUS_DISMISSING) {
             mTextPaint.getTextBounds(mTextValue, 0, mTextValue.length(), mTextRect);
             mTextX = currentPointF.x - mTextPaint.measureText(mTextValue) * 0.5f;
             mTextY = currentPointF.y + mTextRect.height() * 0.5f;
@@ -222,7 +222,7 @@ public class BezierBubbleView extends View {
      * @param canvas
      */
     private void drawDismissing(Canvas canvas) {
-        if (mBubbleStatus == BubbleStatus.STATUS_DISMISSING) {
+        if (mBezierBubbleStatus == BezierBubbleStatus.STATUS_DISMISSING) {
             canvas.drawBitmap(mCurrentDismissingBitmap, currentPointF.x - mCurrentDismissingBitmap.getWidth() * 0.5f, currentPointF.y - mCurrentDismissingBitmap.getHeight() * 0.5f, mPaint);
         }
     }
@@ -254,10 +254,10 @@ public class BezierBubbleView extends View {
                 mDistance = Math.hypot(currentPointF.x - mCenterPoint.x, currentPointF.y - mCenterPoint.y);
 
                 if (mDistance > mCriticalDistance) {
-                    mBubbleStatus = BubbleStatus.STATUS_DRAG;
+                    mBezierBubbleStatus = BezierBubbleStatus.STATUS_DRAG;
                     mHasBeyondCriticalDistance = true;
                 } else {
-                    mBubbleStatus = BubbleStatus.STATUS_CONNECT;
+                    mBezierBubbleStatus = BezierBubbleStatus.STATUS_CONNECT;
                 }
 
                 ViewCompat.postInvalidateOnAnimation(this);
@@ -271,10 +271,10 @@ public class BezierBubbleView extends View {
                 mDistance = Math.hypot(currentPointF.x - mCenterPoint.x, currentPointF.y - mCenterPoint.y);
                 mEndPointF.set(currentPointF);
                 if (mDistance > mCriticalDistance) {
-                    mBubbleStatus = BubbleStatus.STATUS_DISMISSING;
+                    mBezierBubbleStatus = BezierBubbleStatus.STATUS_DISMISSING;
                     startDismissAnimate();
                 } else {
-                    mBubbleStatus = BubbleStatus.STATUS_RECOVER;
+                    mBezierBubbleStatus = BezierBubbleStatus.STATUS_RECOVER;
                     startRecoverAnimate(currentPointF);
                 }
                 break;
@@ -320,17 +320,6 @@ public class BezierBubbleView extends View {
         mObjectAnimator.start();
     }
 
-    public enum BubbleStatus {
-        STATUS_DISMISSED,//消失状态, 已经消失
-        STATUS_CONNECT,//拖动, 随手指移动, 有贝塞尔曲线
-        STATUS_DRAG,//拖动, 随手指移动, 无贝塞尔曲线
-
-        STATUS_RECOVER,//手指松开, 正在恢复初始化状态
-        STATUS_DISMISSING,//手指松开, 正在消失
-
-        STATUS_IDLE,//空闲状态
-    }
-
     private Animator.AnimatorListener mAnimatorListener = new Animator.AnimatorListener() {
         @Override
         public void onAnimationStart(Animator animator) {
@@ -339,10 +328,10 @@ public class BezierBubbleView extends View {
 
         @Override
         public void onAnimationEnd(Animator animator) {
-            if (mBubbleStatus == BubbleStatus.STATUS_RECOVER) {
+            if (mBezierBubbleStatus == BezierBubbleStatus.STATUS_RECOVER) {
                 mObjectAnimator.removeListener(this);
                 recoverStatus();
-            } else if (mBubbleStatus == BubbleStatus.STATUS_DISMISSING) {
+            } else if (mBezierBubbleStatus == BezierBubbleStatus.STATUS_DISMISSING) {
                 mDismissingObjectAnimator.removeListener(mAnimatorListener);
                 dismissStatus();
             }
@@ -360,15 +349,18 @@ public class BezierBubbleView extends View {
     };
 
     private void dismissStatus() {
-        mBubbleStatus = BubbleStatus.STATUS_DISMISSED;
+        mBezierBubbleStatus = BezierBubbleStatus.STATUS_DISMISSED;
         mCurrentDismissingBitmap = null;
+        if (mBezierBubbleListener != null) {
+            mBezierBubbleListener.dismissed(this);
+        }
     }
 
     /**
      * 恢复状态
      */
     private void recoverStatus() {
-        mBubbleStatus = BubbleStatus.STATUS_IDLE;
+        mBezierBubbleStatus = BezierBubbleStatus.STATUS_IDLE;
         mHasBeyondCriticalDistance = false;
     }
 
@@ -383,4 +375,18 @@ public class BezierBubbleView extends View {
         ViewCompat.postInvalidateOnAnimation(this);
     }
 
+    private BezierBubbleListener mBezierBubbleListener;
+
+    public void setBezierBubbleListener(BezierBubbleListener bezierBubbleListener) {
+        mBezierBubbleListener = bezierBubbleListener;
+    }
+
+    /**
+     * 获取当前气泡的状态
+     *
+     * @return
+     */
+    public BezierBubbleStatus getBezierBubbleStatus() {
+        return mBezierBubbleStatus;
+    }
 }
