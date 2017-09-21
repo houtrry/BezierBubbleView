@@ -3,12 +3,15 @@ package com.houtrry.qqunreadmessageview;
 import android.animation.Animator;
 import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
 import android.graphics.Rect;
+import android.support.annotation.NonNull;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.view.animation.FastOutLinearInInterpolator;
 import android.util.AttributeSet;
@@ -48,6 +51,12 @@ public class UnreadBubbleView extends View {
     private double mDistance;
     private BubbleStatus mBubbleStatus = BubbleStatus.STATUS_IDLE;
     private Path mBezierPath = new Path();
+    private Bitmap mCurrentDismissingBitmap = null;
+    /**
+     * 固定位置的圆, 最小半径(手指滑动到mCriticalDistance的时候), 与最大半径(尚未滑动的时候)的比
+     * mMinSettledRadiusProportion = 最小半径/最大半径
+     */
+    private float mMinSettledRadiusProportion = 0.3f;
     /**
      * 贝塞尔存在的最大距离
      */
@@ -62,6 +71,13 @@ public class UnreadBubbleView extends View {
      */
     private PointF[] mBezierPoints = {new PointF(), new PointF(), new PointF(), new PointF(), new PointF()};
     private ObjectAnimator mObjectAnimator;
+
+    /**
+     * 滑动距离是否曾超过mCriticalDistance
+     * 如果超过, 即使滑动距离小于mCriticalDistance, 贝塞尔曲线也不再显示, 固定圆也不再显示
+     */
+    private boolean mHasBeyondCriticalDistance = false;
+    private ObjectAnimator mDismissingObjectAnimator;
 
     public UnreadBubbleView(Context context) {
         this(context, null);
@@ -114,6 +130,7 @@ public class UnreadBubbleView extends View {
         Log.d(TAG, "onDraw: (" + currentPointF.x + ", " + currentPointF.y + ")");
         drawBubble(canvas);
         drawText(canvas);
+        drawDismissing(canvas);
     }
 
     private void drawBubble(Canvas canvas) {
@@ -121,7 +138,6 @@ public class UnreadBubbleView extends View {
         drawSettledCircle(canvas);
         drawMoveCircle(canvas);
         drawBezier(canvas);
-
     }
 
     /**
@@ -130,7 +146,8 @@ public class UnreadBubbleView extends View {
      * @param canvas
      */
     private void drawSettledCircle(Canvas canvas) {
-        if (mBubbleStatus == BubbleStatus.STATUS_CONNECT || mBubbleStatus == BubbleStatus.STATUS_RECOVER) {
+        if ((mBubbleStatus == BubbleStatus.STATUS_CONNECT || mBubbleStatus == BubbleStatus.STATUS_RECOVER) && !mHasBeyondCriticalDistance) {
+            mSettledRadius = (float) ((mMinSettledRadiusProportion + (1 - mDistance / mCriticalDistance) * (1 - mMinSettledRadiusProportion)) * mRadius);
             canvas.drawCircle(mCenterPoint.x, mCenterPoint.y, mSettledRadius, mPaint);
         }
     }
@@ -141,7 +158,7 @@ public class UnreadBubbleView extends View {
      * @param canvas
      */
     private void drawMoveCircle(Canvas canvas) {
-        if (mBubbleStatus != BubbleStatus.STATUS_DISMISSED) {
+        if (mBubbleStatus != BubbleStatus.STATUS_DISMISSED && mBubbleStatus != BubbleStatus.STATUS_DISMISSING) {
             canvas.drawCircle(currentPointF.x, currentPointF.y, mRadius, mPaint);
         }
     }
@@ -152,7 +169,7 @@ public class UnreadBubbleView extends View {
      * @param canvas
      */
     private void drawBezier(Canvas canvas) {
-        if (mBubbleStatus == BubbleStatus.STATUS_CONNECT || mBubbleStatus == BubbleStatus.STATUS_RECOVER) {
+        if ((mBubbleStatus == BubbleStatus.STATUS_CONNECT || mBubbleStatus == BubbleStatus.STATUS_RECOVER) && !mHasBeyondCriticalDistance) {
             mBezierPath.reset();
             calculateBezierPoints();
             mBezierPath.moveTo(mBezierPoints[1].x, mBezierPoints[1].y);
@@ -167,16 +184,23 @@ public class UnreadBubbleView extends View {
     private double mSinx = 0;
     private double mCosx = 0;
     private float mSixFixed = 1;
+    /**
+     * 控制点的位置, 从mCenterPoint到currentPointF的mControlPointProportion位置就是控制点的位置
+     */
+    private float mControlPointProportion = 0.25f;
 
+    /**
+     * 计算贝塞尔曲线五个关键点的位置
+     */
     private void calculateBezierPoints() {
-        mBezierPoints[0].x = currentPointF.x + (mCenterPoint.x - currentPointF.x) * 0.5f;
-        mBezierPoints[0].y = currentPointF.y + (mCenterPoint.y - currentPointF.y) * 0.5f;
+        mBezierPoints[0].x = mCenterPoint.x + (currentPointF.x - mCenterPoint.x) * mControlPointProportion;
+        mBezierPoints[0].y = mCenterPoint.y + (currentPointF.y - mCenterPoint.y) * mControlPointProportion;
 
         mSinx = (mCenterPoint.x - currentPointF.x) / mDistance;
         mCosx = (mCenterPoint.y - currentPointF.y) / mDistance;
 
-
         mSixFixed = mSinx > 0 ? 1.0f : -1.0f;
+
         mBezierPoints[1].x = (float) (mCenterPoint.x + mSettledRadius * mCosx * mSixFixed);
         mBezierPoints[1].y = (float) (mCenterPoint.y - mSettledRadius * mSinx * mSixFixed);
 
@@ -188,20 +212,40 @@ public class UnreadBubbleView extends View {
 
         mBezierPoints[4].x = (float) (currentPointF.x - mRadius * mCosx * mSixFixed);
         mBezierPoints[4].y = (float) (currentPointF.y + mRadius * mSinx * mSixFixed);
-
     }
 
     /**
      * 画文字
+     *
      * @param canvas
      */
     private void drawText(Canvas canvas) {
-        if (mBubbleStatus != BubbleStatus.STATUS_DISMISSED) {
+        if (mBubbleStatus != BubbleStatus.STATUS_DISMISSED && mBubbleStatus != BubbleStatus.STATUS_DISMISSING) {
             mTextPaint.getTextBounds(mTextValue, 0, mTextValue.length(), mTextRect);
             mTextX = currentPointF.x - mTextPaint.measureText(mTextValue) * 0.5f;
             mTextY = currentPointF.y + mTextRect.height() * 0.5f;
             canvas.drawText(String.valueOf(mTextValue), mTextX, mTextY, mTextPaint);
         }
+    }
+
+    /**
+     * 画消失的动画
+     *
+     * @param canvas
+     */
+    private void drawDismissing(Canvas canvas) {
+        if (mBubbleStatus == BubbleStatus.STATUS_DISMISSING) {
+            canvas.drawBitmap(mCurrentDismissingBitmap, currentPointF.x - mCurrentDismissingBitmap.getWidth() * 0.5f, currentPointF.y - mCurrentDismissingBitmap.getHeight() * 0.5f, mPaint);
+        }
+    }
+
+    private float currentDismissingProgress = 0.0f;
+    private int[] mBitmapResources = {R.mipmap.icon_dismissing1, R.mipmap.icon_dismissing2, R.mipmap.icon_dismissing3, R.mipmap.icon_dismissing4, R.mipmap.icon_dismissing5};
+
+    public void setCurrentDismissingProgress(float currentDismissingProgress) {
+        this.currentDismissingProgress = currentDismissingProgress;
+        mCurrentDismissingBitmap = BitmapFactory.decodeResource(getResources(), mBitmapResources[(int) currentDismissingProgress]);
+        ViewCompat.postInvalidateOnAnimation(this);
     }
 
     private float mDownX = 0;
@@ -223,6 +267,7 @@ public class UnreadBubbleView extends View {
 
                 if (mDistance > mCriticalDistance) {
                     mBubbleStatus = BubbleStatus.STATUS_DRAG;
+                    mHasBeyondCriticalDistance = true;
                 } else {
                     mBubbleStatus = BubbleStatus.STATUS_CONNECT;
                 }
@@ -250,8 +295,18 @@ public class UnreadBubbleView extends View {
         return true;
     }
 
+    /**
+     * 开启消失的动画
+     */
     private void startDismissAnimate() {
-        animate().alpha(0.0f).setInterpolator(new FastOutLinearInInterpolator()).setDuration(1300).setListener(mAnimatorListener).start();
+        if (mDismissingObjectAnimator != null && mDismissingObjectAnimator.isRunning()) {
+            mDismissingObjectAnimator.cancel();
+        }
+        mDismissingObjectAnimator = ObjectAnimator.ofFloat(this, "currentDismissingProgress", 0.0f, 4.99f);
+        mDismissingObjectAnimator.setInterpolator(new FastOutLinearInInterpolator());
+        mDismissingObjectAnimator.addListener(mAnimatorListener);
+        mDismissingObjectAnimator.setDuration(300);
+        mDismissingObjectAnimator.start();
     }
 
     public void setCurrentPointF(PointF currentPointF) {
@@ -261,6 +316,11 @@ public class UnreadBubbleView extends View {
 
     private PointF mEndPointF = new PointF();
 
+    /**
+     * 开始恢复原状态的动画
+     *
+     * @param pointF
+     */
     private void startRecoverAnimate(PointF pointF) {
         if (mObjectAnimator != null && mObjectAnimator.isRunning()) {
             mObjectAnimator.cancel();
@@ -292,11 +352,11 @@ public class UnreadBubbleView extends View {
         @Override
         public void onAnimationEnd(Animator animator) {
             if (mBubbleStatus == BubbleStatus.STATUS_RECOVER) {
-                mBubbleStatus = BubbleStatus.STATUS_IDLE;
                 mObjectAnimator.removeListener(this);
+                recoverStatus();
             } else if (mBubbleStatus == BubbleStatus.STATUS_DISMISSING) {
                 mBubbleStatus = BubbleStatus.STATUS_DISMISSED;
-
+                mDismissingObjectAnimator.removeListener(mAnimatorListener);
             }
         }
 
@@ -310,5 +370,24 @@ public class UnreadBubbleView extends View {
 
         }
     };
+
+    /**
+     * 恢复状态
+     */
+    private void recoverStatus() {
+        mBubbleStatus = BubbleStatus.STATUS_IDLE;
+        mHasBeyondCriticalDistance = false;
+    }
+
+    public void setTextValue(int value) {
+        mTextValue = String.valueOf(value);
+        ViewCompat.postInvalidateOnAnimation(this);
+    }
+
+    @NonNull
+    public void setTextValue(String valueStr) {
+        mTextValue = valueStr;
+        ViewCompat.postInvalidateOnAnimation(this);
+    }
 
 }
