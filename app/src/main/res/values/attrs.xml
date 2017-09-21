@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="BezierBubbleView">
+        <!--气泡的颜色-->
+        <attr name="bubble_color" format="dimension|reference"/>
+
+        <!--气泡中的文字-->
+        <attr name="bubble_text" format="string|reference"/>
+
+        <!--文字的颜色-->
+        <attr name="text_color" format="color|reference"/>
+
+        <!--文字的大小-->
+        <attr name="text_size" format="dimension|reference"/>
+
+        <!--气泡中, 圆的半径-->
+        <attr name="circle_radius" format="dimension|reference"/>
+
+        <!-- 固定位置的圆, 最小半径(手指滑动到mCriticalDistance的时候), 与最大半径(尚未滑动的时候)的比 -->
+        <!-- mMinSettledRadiusProportion = 最小半径/最大半径 -->
+        <attr name="min_settled_radius_proportion" format="float|reference"/>
+
+        <!--贝塞尔存在的最大距离, 超出这个距离, 气泡消失-->
+        <attr name="critical_distance" format="dimension|reference"/>
+        <!--贝塞尔存在的最大距离是半径的倍数-->
+        <attr name="critical_distance_multiple_radius" format="float"/>
+
+        <!--mControlPointProportion  控制点的位置, 从mCenterPoint到currentPointF的mControlPointProportion位置就是控制点的位置-->
+        <attr name="control_point_proportion" format="float"/>
+
+        <!--如果控件宽高是warp_content, 可以使用bubble_padding来设置padding-->
+        <attr name="bubble_padding" format="dimension|reference"/>
+
+
+    </declare-styleable>
+</resources>

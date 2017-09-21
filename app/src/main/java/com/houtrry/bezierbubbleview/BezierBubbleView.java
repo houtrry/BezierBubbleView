@@ -3,6 +3,7 @@ package com.houtrry.bezierbubbleview;
 import android.animation.Animator;
 import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -15,15 +16,19 @@ import android.support.annotation.NonNull;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.view.animation.FastOutLinearInInterpolator;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
+
+import static android.R.attr.mode;
 
 /**
  * @author houtrry
  * @version $Rev$
  * @time 2017/9/20 19:43
- * @desc ${TODO}
+ * @desc 仿QQ未读消息的气泡
+ * 注意: 父控件以及根控件要使用android:clipChildren="false", 否则, 无法正确显示.
  * @updateAuthor $Author$
  * @updateDate $Date$
  * @updateDesc $TODO$
@@ -32,23 +37,23 @@ import android.view.animation.OvershootInterpolator;
 public class BezierBubbleView extends View {
 
     private static final String TAG = BezierBubbleView.class.getSimpleName();
-    private PointF currentPointF = new PointF();
-    private int mBubbleColor = Color.parseColor("#ffe91e63");
-    private String mTextValue = String.valueOf(99);
-    private int mTextColor = Color.WHITE;
-    private int mTextSize = 30;
-    private int mWidth;
-    private int mHeight;
+    private PointF currentPointF = new PointF();//当前手指的点的坐标
+    private int mBubbleColor = Color.parseColor("#ffe91e63");//气泡的颜色
+    private String mTextValue = String.valueOf(99);//气泡的文字内容
+    private int mTextColor = Color.WHITE;//文字的颜色
+    private int mTextSize = 30;//文字的大小
+    private int mWidth;//当前控件的宽
+    private int mHeight;//当前控件的高
     private Paint mPaint;
     private Paint mTextPaint;
     private Rect mTextRect = new Rect();
-    private float mTextX;
-    private float mTextY;
-    private float mRadius;
-    private float mSettledRadius;
-    private PointF mCenterPoint = new PointF();
-    private double mDistance;
-    private BezierBubbleStatus mBezierBubbleStatus = BezierBubbleStatus.STATUS_IDLE;
+    private float mTextX;//绘制文字时, 文字左下角的x值
+    private float mTextY;//绘制文字时, 文字左下角的y值
+    private float mRadius;//移动圆的半径
+    private float mSettledRadius;//固定圆的半径
+    private PointF mCenterPoint = new PointF();//固定圆的圆心, 也是当前控件的中心点
+    private double mDistance;//当前位置到mCenterPoint的距离
+    private BezierBubbleStatus mBezierBubbleStatus = BezierBubbleStatus.STATUS_IDLE;//当前气泡的状态
     private Path mBezierPath = new Path();
     private Bitmap mCurrentDismissingBitmap = null;
     /**
@@ -69,7 +74,7 @@ public class BezierBubbleView extends View {
      * mBezierPoints[4]: 移动圆的y值大的那个点
      */
     private PointF[] mBezierPoints = {new PointF(), new PointF(), new PointF(), new PointF(), new PointF()};
-    private ObjectAnimator mObjectAnimator;
+    private ObjectAnimator mRecoverObjectAnimator;
 
     /**
      * 滑动距离是否曾超过mCriticalDistance
@@ -77,6 +82,14 @@ public class BezierBubbleView extends View {
      */
     private boolean mHasBeyondCriticalDistance = false;
     private ObjectAnimator mDismissingObjectAnimator;
+    /**
+     * 最大距离(mCriticalDistance)是半径的多少倍
+     */
+    private float mCriticalDistanceMultipleRadius = 6.0f;
+
+    private float currentDismissingProgress = 0.0f;//当前消失动画的进度
+    private int[] mBitmapResources = {R.mipmap.icon_dismissing1, R.mipmap.icon_dismissing2, R.mipmap.icon_dismissing3, R.mipmap.icon_dismissing4, R.mipmap.icon_dismissing5};
+
 
     public BezierBubbleView(Context context) {
         this(context, null);
@@ -88,7 +101,29 @@ public class BezierBubbleView extends View {
 
     public BezierBubbleView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+        initAttributeSet(context, attrs);
         init(context, attrs);
+    }
+
+    private void initAttributeSet(Context context, AttributeSet attrs) {
+        final TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.BezierBubbleView);
+        mBubbleColor = typedArray.getColor(R.styleable.BezierBubbleView_bubble_color, mBubbleColor);
+        mTextValue = typedArray.getString(R.styleable.BezierBubbleView_bubble_text);
+        mTextColor = typedArray.getColor(R.styleable.BezierBubbleView_text_color, mTextColor);
+        mTextSize = typedArray.getDimensionPixelSize(R.styleable.BezierBubbleView_text_size, mTextSize);
+        mRadius = typedArray.getDimensionPixelSize(R.styleable.BezierBubbleView_circle_radius, 60);
+        mBubblePadding = typedArray.getDimensionPixelSize(R.styleable.BezierBubbleView_bubble_padding, mBubblePadding);
+        mMinSettledRadiusProportion = typedArray.getFloat(R.styleable.BezierBubbleView_min_settled_radius_proportion, mMinSettledRadiusProportion);
+        mCriticalDistanceMultipleRadius = typedArray.getFloat(R.styleable.BezierBubbleView_critical_distance_multiple_radius, 0);
+        mCriticalDistance = typedArray.getFloat(R.styleable.BezierBubbleView_critical_distance, 0);
+        if (mCriticalDistance == 0) {
+            if (mCriticalDistanceMultipleRadius == 0) {
+                mCriticalDistanceMultipleRadius = 6.0f;
+            }
+            mCriticalDistance = mCriticalDistanceMultipleRadius * mRadius;
+        }
+        mControlPointProportion = typedArray.getFloat(R.styleable.BezierBubbleView_control_point_proportion, mControlPointProportion);
+        typedArray.recycle();
     }
 
     private void init(Context context, AttributeSet attrs) {
@@ -98,8 +133,6 @@ public class BezierBubbleView extends View {
         mTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mTextPaint.setColor(mTextColor);
         mTextPaint.setTextSize(mTextSize);
-
-
     }
 
     @Override
@@ -107,11 +140,52 @@ public class BezierBubbleView extends View {
         super.onSizeChanged(w, h, oldw, oldh);
         mWidth = w;
         mHeight = h;
-        mRadius = Math.min(mWidth, mHeight) * 0.5f;
+        mRadius = Math.max(mWidth, mHeight) * 0.5f;
         currentPointF.set(mRadius, mRadius);
         mCenterPoint.set(currentPointF);
         mSettledRadius = mRadius * 0.6f;
-        mCriticalDistance = 6 * mRadius;
+        mCriticalDistance = mCriticalDistanceMultipleRadius * mRadius;
+
+        Log.d(TAG, "onSizeChanged: mWidth: "+mWidth+", mHeight: "+mHeight);
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+
+        setMeasuredDimension(measureWidth(widthMeasureSpec), measureHeight(heightMeasureSpec));
+    }
+
+    private int mBubblePadding = 10;
+
+    private int mWidthSize;
+    private int mWidthMode;
+    private int mHeightSize;
+    private int mHeightMode;
+    private int measureWidth(int widthMeasureSpec) {
+        int result = 0;
+        mWidthSize = MeasureSpec.getSize(widthMeasureSpec);
+        mWidthMode = MeasureSpec.getMode(widthMeasureSpec);
+        if (mWidthMode == MeasureSpec.EXACTLY) {
+            result = mWidthSize;
+        } else {
+            final float measureTextWidth = mTextPaint.measureText(mTextValue);
+            result = (int) (measureTextWidth + mBubblePadding*2.0f);
+        }
+        return result;
+    }
+
+    private int measureHeight(int heightMeasureSpec) {
+        int result = 0;
+        mHeightSize = MeasureSpec.getSize(heightMeasureSpec);
+        mHeightMode = MeasureSpec.getMode(heightMeasureSpec);
+        if (mHeightMode == MeasureSpec.EXACTLY) {
+            result = mHeightSize;
+        } else {
+            mTextPaint.getTextBounds(mTextValue, 0, mTextValue.length(), mTextRect);
+            result = mTextRect.height() + mBubblePadding*2;
+        }
+        return result;
     }
 
     @Override
@@ -227,9 +301,6 @@ public class BezierBubbleView extends View {
         }
     }
 
-    private float currentDismissingProgress = 0.0f;
-    private int[] mBitmapResources = {R.mipmap.icon_dismissing1, R.mipmap.icon_dismissing2, R.mipmap.icon_dismissing3, R.mipmap.icon_dismissing4, R.mipmap.icon_dismissing5};
-
     public void setCurrentDismissingProgress(float currentDismissingProgress) {
         this.currentDismissingProgress = currentDismissingProgress;
         mCurrentDismissingBitmap = BitmapFactory.decodeResource(getResources(), mBitmapResources[(int) currentDismissingProgress]);
@@ -249,33 +320,36 @@ public class BezierBubbleView extends View {
                 break;
             }
             case MotionEvent.ACTION_MOVE: {
-                currentPointF.set(event.getX(), event.getY());
+                if (mBezierBubbleStatus != BezierBubbleStatus.STATUS_DISMISSED) {
+                    currentPointF.set(event.getX(), event.getY());
 
-                mDistance = Math.hypot(currentPointF.x - mCenterPoint.x, currentPointF.y - mCenterPoint.y);
+                    mDistance = Math.hypot(currentPointF.x - mCenterPoint.x, currentPointF.y - mCenterPoint.y);
 
-                if (mDistance > mCriticalDistance) {
-                    mBezierBubbleStatus = BezierBubbleStatus.STATUS_DRAG;
-                    mHasBeyondCriticalDistance = true;
-                } else {
-                    mBezierBubbleStatus = BezierBubbleStatus.STATUS_CONNECT;
+                    if (mDistance > mCriticalDistance) {
+                        mBezierBubbleStatus = BezierBubbleStatus.STATUS_DRAG;
+                        mHasBeyondCriticalDistance = true;
+                    } else {
+                        mBezierBubbleStatus = BezierBubbleStatus.STATUS_CONNECT;
+                    }
+
+                    ViewCompat.postInvalidateOnAnimation(this);
                 }
-
-                ViewCompat.postInvalidateOnAnimation(this);
                 break;
             }
             case MotionEvent.ACTION_UP: {
-                getParent().requestDisallowInterceptTouchEvent(false);
+                if (mBezierBubbleStatus != BezierBubbleStatus.STATUS_DISMISSED) {
+                    getParent().requestDisallowInterceptTouchEvent(false);
 
-                currentPointF.set(event.getX(), event.getY());
+                    currentPointF.set(event.getX(), event.getY());
 
-                mDistance = Math.hypot(currentPointF.x - mCenterPoint.x, currentPointF.y - mCenterPoint.y);
-                mEndPointF.set(currentPointF);
-                if (mDistance > mCriticalDistance) {
-                    mBezierBubbleStatus = BezierBubbleStatus.STATUS_DISMISSING;
-                    startDismissAnimate();
-                } else {
-                    mBezierBubbleStatus = BezierBubbleStatus.STATUS_RECOVER;
-                    startRecoverAnimate(currentPointF);
+                    mDistance = Math.hypot(currentPointF.x - mCenterPoint.x, currentPointF.y - mCenterPoint.y);
+                    if (mDistance > mCriticalDistance) {
+                        mBezierBubbleStatus = BezierBubbleStatus.STATUS_DISMISSING;
+                        startDismissAnimate();
+                    } else {
+                        mBezierBubbleStatus = BezierBubbleStatus.STATUS_RECOVER;
+                        startRecoverAnimate(currentPointF);
+                    }
                 }
                 break;
             }
@@ -302,22 +376,20 @@ public class BezierBubbleView extends View {
         ViewCompat.postInvalidateOnAnimation(this);
     }
 
-    private PointF mEndPointF = new PointF();
-
     /**
      * 开始恢复原状态的动画
      *
      * @param pointF
      */
     private void startRecoverAnimate(PointF pointF) {
-        if (mObjectAnimator != null && mObjectAnimator.isRunning()) {
-            mObjectAnimator.cancel();
+        if (mRecoverObjectAnimator != null && mRecoverObjectAnimator.isRunning()) {
+            mRecoverObjectAnimator.cancel();
         }
-        mObjectAnimator = ObjectAnimator.ofObject(this, "currentPointF", new PointFEvaluator(), pointF, mCenterPoint);
-        mObjectAnimator.setDuration(500);
-        mObjectAnimator.setInterpolator(new OvershootInterpolator(3));
-        mObjectAnimator.addListener(mAnimatorListener);
-        mObjectAnimator.start();
+        mRecoverObjectAnimator = ObjectAnimator.ofObject(this, "currentPointF", new PointFEvaluator(), pointF, mCenterPoint);
+        mRecoverObjectAnimator.setDuration(500);
+        mRecoverObjectAnimator.setInterpolator(new OvershootInterpolator(3));
+        mRecoverObjectAnimator.addListener(mAnimatorListener);
+        mRecoverObjectAnimator.start();
     }
 
     private Animator.AnimatorListener mAnimatorListener = new Animator.AnimatorListener() {
@@ -329,7 +401,7 @@ public class BezierBubbleView extends View {
         @Override
         public void onAnimationEnd(Animator animator) {
             if (mBezierBubbleStatus == BezierBubbleStatus.STATUS_RECOVER) {
-                mObjectAnimator.removeListener(this);
+                mRecoverObjectAnimator.removeListener(this);
                 recoverStatus();
             } else if (mBezierBubbleStatus == BezierBubbleStatus.STATUS_DISMISSING) {
                 mDismissingObjectAnimator.removeListener(mAnimatorListener);

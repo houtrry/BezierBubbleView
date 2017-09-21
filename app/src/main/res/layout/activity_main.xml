@@ -12,11 +12,11 @@
         android:layout_width="0dp"
         android:layout_height="200dp"
         android:background="@android:color/darker_gray"
+        android:clipChildren="false"
+        android:clipToPadding="false"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:clipChildren="false"
-        android:clipToPadding="false"
         >
 
         <com.houtrry.bezierbubbleview.BezierBubbleView
@@ -24,7 +24,9 @@
             android:layout_height="25dp"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
-            android:layout_marginRight="20dp"/>
+            android:layout_marginRight="20dp"
+            android:background="@android:color/holo_green_light"
+            app:bubble_text="+99"/>
     </RelativeLayout>
 
 </android.support.constraint.ConstraintLayout>
