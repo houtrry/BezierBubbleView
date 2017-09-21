@@ -1,4 +1,4 @@
-package com.houtrry.qqunreadmessageview;
+package com.houtrry.bezierbubbleview;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;

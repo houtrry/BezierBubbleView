@@ -1,4 +1,4 @@
-package com.houtrry.qqunreadmessageview;
+package com.houtrry.bezierbubbleview;
 
 /**
  * Created by houtrry on 2017/9/21.

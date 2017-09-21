@@ -1,4 +1,4 @@
-package com.houtrry.qqunreadmessageview;
+package com.houtrry.bezierbubbleview;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

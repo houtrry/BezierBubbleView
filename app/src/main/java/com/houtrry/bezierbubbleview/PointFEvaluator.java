@@ -1,4 +1,4 @@
-package com.houtrry.qqunreadmessageview;
+package com.houtrry.bezierbubbleview;
 
 import android.animation.TypeEvaluator;
 import android.graphics.PointF;

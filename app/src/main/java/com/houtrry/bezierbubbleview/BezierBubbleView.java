@@ -1,4 +1,4 @@
-package com.houtrry.qqunreadmessageview;
+package com.houtrry.bezierbubbleview;
 
 import android.animation.Animator;
 import android.animation.ObjectAnimator;
@@ -15,7 +15,6 @@ import android.support.annotation.NonNull;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.view.animation.FastOutLinearInInterpolator;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
@@ -30,12 +29,12 @@ import android.view.animation.OvershootInterpolator;
  * @updateDesc $TODO$
  */
 
-public class UnreadBubbleView extends View {
+public class BezierBubbleView extends View {
 
-    private static final String TAG = UnreadBubbleView.class.getSimpleName();
+    private static final String TAG = BezierBubbleView.class.getSimpleName();
     private PointF currentPointF = new PointF();
     private int mBubbleColor = Color.parseColor("#ffe91e63");
-    private String mTextValue = String.valueOf(1);
+    private String mTextValue = String.valueOf(99);
     private int mTextColor = Color.WHITE;
     private int mTextSize = 30;
     private int mWidth;
@@ -79,15 +78,15 @@ public class UnreadBubbleView extends View {
     private boolean mHasBeyondCriticalDistance = false;
     private ObjectAnimator mDismissingObjectAnimator;
 
-    public UnreadBubbleView(Context context) {
+    public BezierBubbleView(Context context) {
         this(context, null);
     }
 
-    public UnreadBubbleView(Context context, AttributeSet attrs) {
+    public BezierBubbleView(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
     }
 
-    public UnreadBubbleView(Context context, AttributeSet attrs, int defStyle) {
+    public BezierBubbleView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         init(context, attrs);
     }
@@ -104,37 +103,26 @@ public class UnreadBubbleView extends View {
     }
 
     @Override
-    protected void onFinishInflate() {
-        super.onFinishInflate();
-    }
-
-    @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        mWidth = getMeasuredWidth();
-        mHeight = getMeasuredHeight();
+        mWidth = w;
+        mHeight = h;
         mRadius = Math.min(mWidth, mHeight) * 0.5f;
-
         currentPointF.set(mRadius, mRadius);
-
         mCenterPoint.set(currentPointF);
-
         mSettledRadius = mRadius * 0.6f;
-
         mCriticalDistance = 6 * mRadius;
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        Log.d(TAG, "onDraw: (" + currentPointF.x + ", " + currentPointF.y + ")");
         drawBubble(canvas);
         drawText(canvas);
         drawDismissing(canvas);
     }
 
     private void drawBubble(Canvas canvas) {
-        Log.d(TAG, "drawBubble: (" + currentPointF.x + ", " + currentPointF.y + "), " + mRadius + ", ");
         drawSettledCircle(canvas);
         drawMoveCircle(canvas);
         drawBezier(canvas);
@@ -355,8 +343,8 @@ public class UnreadBubbleView extends View {
                 mObjectAnimator.removeListener(this);
                 recoverStatus();
             } else if (mBubbleStatus == BubbleStatus.STATUS_DISMISSING) {
-                mBubbleStatus = BubbleStatus.STATUS_DISMISSED;
                 mDismissingObjectAnimator.removeListener(mAnimatorListener);
+                dismissStatus();
             }
         }
 
@@ -370,6 +358,11 @@ public class UnreadBubbleView extends View {
 
         }
     };
+
+    private void dismissStatus() {
+        mBubbleStatus = BubbleStatus.STATUS_DISMISSED;
+        mCurrentDismissingBitmap = null;
+    }
 
     /**
      * 恢复状态

@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:clipChildren="false"
-    tools:context="com.houtrry.qqunreadmessageview.MainActivity">
+    tools:context="com.houtrry.bezierbubbleview.MainActivity">
 
     <RelativeLayout
         android:layout_width="0dp"
@@ -19,7 +19,7 @@
         android:clipToPadding="false"
         >
 
-        <com.houtrry.qqunreadmessageview.UnreadBubbleView
+        <com.houtrry.bezierbubbleview.BezierBubbleView
             android:layout_width="25dp"
             android:layout_height="25dp"
             android:layout_alignParentEnd="true"
