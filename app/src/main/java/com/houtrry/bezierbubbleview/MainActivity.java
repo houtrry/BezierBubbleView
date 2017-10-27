@@ -40,7 +40,8 @@ public class MainActivity extends AppCompatActivity {
 
         Random random = new Random();
         for (int i = 0; i < 100; i++) {
-            mDatas.add(new DataBean("我是第 " + i + " 条数据", 1 + random.nextInt(99)));
+//            mDatas.add(new DataBean("我是第 " + i + " 条数据", 1 + random.nextInt(99)));
+            mDatas.add(new DataBean("我是第 " + i + " 条数据", i));
         }
 
         RecyclerAdapter recyclerAdapter = new RecyclerAdapter(mDatas);
@@ -62,15 +63,16 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onBindViewHolder(RecyclerHolder holder, int position) {
-            DataBean dataBean = mData.get(position);
+        public void onBindViewHolder(RecyclerHolder holder, final int position) {
+            final DataBean dataBean = mData.get(position);
             Log.d(TAG, "onBindViewHolder: dataBean: "+dataBean);
             holder.tvContent.setText(dataBean.getContent());
             holder.bezierBubbleView.setTextValue(dataBean.getUnReadCount());
             holder.bezierBubbleView.setBezierBubbleListener(new BezierBubbleListener() {
                 @Override
                 public void dismissed(BezierBubbleView bezierBubbleView) {
-
+                    dataBean.setUnReadCount(0);
+                    Log.d(TAG, "dismissed: "+mData.get(position).getUnReadCount());
                 }
             });
         }
