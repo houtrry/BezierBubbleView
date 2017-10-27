@@ -1,14 +1,13 @@
 package com.houtrry.bezierbubbleview;
 
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewParent;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -59,14 +58,6 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public RecyclerHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            parent.setClipChildren(false);
-            Log.e(TAG, "onCreateViewHolder: "+parent.getClass().getSimpleName());
-            System.out.println("onCreateViewHolder: "+parent.getClass().getSimpleName());
-            ViewParent parent1 = parent.getParent();
-            if (parent1 != null) {
-                Log.e(TAG, "onCreateViewHolder: "+parent1.getClass().getSimpleName());
-                System.out.println("onCreateViewHolder: "+parent1.getClass().getSimpleName());
-            }
             return new RecyclerHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.item_recycler, parent, false));
         }
 
@@ -76,6 +67,12 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "onBindViewHolder: dataBean: "+dataBean);
             holder.tvContent.setText(dataBean.getContent());
             holder.bezierBubbleView.setTextValue(dataBean.getUnReadCount());
+            holder.bezierBubbleView.setBezierBubbleListener(new BezierBubbleListener() {
+                @Override
+                public void dismissed(BezierBubbleView bezierBubbleView) {
+
+                }
+            });
         }
 
         @Override
@@ -90,25 +87,8 @@ public class MainActivity extends AppCompatActivity {
 
             public RecyclerHolder(View itemView) {
                 super(itemView);
-                Log.e(TAG, "RecyclerHolder, onCreateViewHolder:itemView "+itemView.getClass().getSimpleName());
-                ViewParent parent = itemView.getParent();
-                if (parent != null) {
-                    Log.e(TAG, "RecyclerHolder, onCreateViewHolder: "+parent.getClass().getSimpleName());
-                    System.out.println("RecyclerHolder, onCreateViewHolder: "+parent.getClass().getSimpleName());
-                    ViewParent parent1 = parent.getParent();
-                    if (parent1 != null) {
-                        Log.e(TAG, "RecyclerHolder, onCreateViewHolder: "+parent1.getClass().getSimpleName());
-                        System.out.println("RecyclerHolder, onCreateViewHolder: "+parent1.getClass().getSimpleName());
-                    }
-                }
                 tvContent = itemView.findViewById(R.id.tvContent);
                 bezierBubbleView = itemView.findViewById(R.id.bezierBubbleView);
-                bezierBubbleView.setBezierBubbleListener(new BezierBubbleListener() {
-                    @Override
-                    public void dismissed(BezierBubbleView bezierBubbleView) {
-
-                    }
-                });
             }
         }
     }

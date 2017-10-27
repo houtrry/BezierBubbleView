@@ -438,12 +438,14 @@ public class BezierBubbleView extends View {
 
     public void setTextValue(int value) {
         mTextValue = String.valueOf(value);
+        mDownX = mDownY = 0;
         ViewCompat.postInvalidateOnAnimation(this);
     }
 
     @NonNull
     public void setTextValue(String valueStr) {
         mTextValue = valueStr;
+        recoverStatus();
         ViewCompat.postInvalidateOnAnimation(this);
     }
 
