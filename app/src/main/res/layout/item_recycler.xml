@@ -5,16 +5,15 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:clipChildren="false"
-                android:clipToPadding="false"
-                android:orientation="horizontal"
-                android:paddingBottom="10dp"
-                android:paddingTop="10dp">
+                android:clipToPadding="false">
 
     <TextView
         android:id="@+id/tvContent"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
+        android:paddingBottom="10dp"
+        android:paddingTop="10dp"
         android:textColor="@color/colorAccent"
         android:textSize="16sp"
         tools:text="哈哈"/>
@@ -29,4 +28,10 @@
         android:layout_marginRight="20dp"
         bb:bubble_text="+99"
         bb:text_size="10sp"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1px"
+        android:layout_alignParentBottom="true"
+        android:background="@android:color/darker_gray"/>
 </RelativeLayout>

@@ -8,6 +8,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -22,7 +23,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
     private RecyclerView mRecyclerView;
 
-    private List<DataBean> mDatas = new ArrayList<>();
+    private List<DataBean> mDatas = new ArrayList<>(100);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,8 +41,7 @@ public class MainActivity extends AppCompatActivity {
 
         Random random = new Random();
         for (int i = 0; i < 100; i++) {
-//            mDatas.add(new DataBean("我是第 " + i + " 条数据", 1 + random.nextInt(99)));
-            mDatas.add(new DataBean("我是第 " + i + " 条数据", i));
+            mDatas.add(new DataBean("我是第 " + i + " 条数据", i + 1));
         }
 
         RecyclerAdapter recyclerAdapter = new RecyclerAdapter(mDatas);
@@ -65,16 +65,21 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onBindViewHolder(RecyclerHolder holder, final int position) {
             final DataBean dataBean = mData.get(position);
-            Log.d(TAG, "onBindViewHolder: dataBean: "+dataBean);
+            Log.d(TAG, "onBindViewHolder: dataBean: " + dataBean);
             holder.tvContent.setText(dataBean.getContent());
             holder.bezierBubbleView.setTextValue(dataBean.getUnReadCount());
             holder.bezierBubbleView.setBezierBubbleListener(new BezierBubbleListener() {
                 @Override
                 public void dismissed(BezierBubbleView bezierBubbleView) {
                     dataBean.setUnReadCount(0);
-                    Log.d(TAG, "dismissed: "+mData.get(position).getUnReadCount());
+                    Log.d(TAG, "dismissed: " + mData.get(position).getUnReadCount());
                 }
             });
+            holder.bezierBubbleView.setVisibility(dataBean.getUnReadCount() == 0 ? View.GONE : View.VISIBLE);
+
+            RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) holder.bezierBubbleView.getLayoutParams();
+            int rightMargin = layoutParams.rightMargin;
+            Log.d(TAG, "onBindViewHolder: dataBean: " + dataBean+", rightMargin: "+rightMargin);
         }
 
         @Override

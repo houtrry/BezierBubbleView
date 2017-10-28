@@ -17,6 +17,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.view.animation.FastOutLinearInInterpolator;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
@@ -88,7 +89,8 @@ public class BezierBubbleView extends View {
      */
     private float mCriticalDistanceMultipleRadius = 6.0f;
 
-    private float currentDismissingProgress = 0.0f;//当前消失动画的进度
+    /**当前消失动画的进度*/
+    private int currentDismissingPosition = -1;
     private int[] mBitmapResources = {R.mipmap.icon_dismissing1, R.mipmap.icon_dismissing2, R.mipmap.icon_dismissing3, R.mipmap.icon_dismissing4, R.mipmap.icon_dismissing5};
 
 
@@ -142,16 +144,18 @@ public class BezierBubbleView extends View {
         mWidth = w;
         mHeight = h;
         if (mRadius == 0) {
-            mRadius = Math.max(mWidth, mHeight) * 0.5f;
+            mRadius = Math.min(mWidth, mHeight) * 0.5f;
         }
         currentPointF.set(mRadius, mRadius);
         mCenterPoint.set(currentPointF);
         mCriticalDistance = mCriticalDistanceMultipleRadius * mRadius;
+        int left = getLeft();
+        int right = getRight();
+        Log.d(TAG, "onSizeChanged: mWidth: " + mWidth + ", left: " + left + ", right: " + right + ", mTextValue: " + mTextValue);
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        //        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         setMeasuredDimension(measureWidth(widthMeasureSpec), measureHeight(heightMeasureSpec));
     }
 
@@ -208,7 +212,8 @@ public class BezierBubbleView extends View {
      * @param canvas
      */
     private void drawSettledCircle(Canvas canvas) {
-        if ((mBezierBubbleStatus == STATUS_CONNECT || mBezierBubbleStatus == STATUS_RECOVER) && !mHasBeyondCriticalDistance) {
+        final boolean needDrawSettledCircle = (mBezierBubbleStatus == STATUS_CONNECT || mBezierBubbleStatus == STATUS_RECOVER) && !mHasBeyondCriticalDistance;
+        if (needDrawSettledCircle) {
             mSettledRadius = (float) ((mMinSettledRadiusProportion + (1 - mDistance / mCriticalDistance) * (1 - mMinSettledRadiusProportion)) * mRadius);
             canvas.drawCircle(mCenterPoint.x, mCenterPoint.y, mSettledRadius, mPaint);
         }
@@ -231,7 +236,8 @@ public class BezierBubbleView extends View {
      * @param canvas
      */
     private void drawBezier(Canvas canvas) {
-        if ((mBezierBubbleStatus == STATUS_CONNECT || mBezierBubbleStatus == STATUS_RECOVER) && !mHasBeyondCriticalDistance) {
+        final boolean needDrawBezierPart = (mBezierBubbleStatus == STATUS_CONNECT || mBezierBubbleStatus == STATUS_RECOVER) && !mHasBeyondCriticalDistance;
+        if (needDrawBezierPart) {
             mBezierPath.reset();
             calculateBezierPoints();
             mBezierPath.moveTo(mBezierPoints[1].x, mBezierPoints[1].y);
@@ -257,21 +263,15 @@ public class BezierBubbleView extends View {
     private void calculateBezierPoints() {
         mBezierPoints[0].x = mCenterPoint.x + (currentPointF.x - mCenterPoint.x) * mControlPointProportion;
         mBezierPoints[0].y = mCenterPoint.y + (currentPointF.y - mCenterPoint.y) * mControlPointProportion;
-
         mSinx = (mCenterPoint.x - currentPointF.x) / mDistance;
         mCosx = (mCenterPoint.y - currentPointF.y) / mDistance;
-
         mSixFixed = mSinx > 0 ? 1.0f : -1.0f;
-
         mBezierPoints[1].x = (float) (mCenterPoint.x + mSettledRadius * mCosx * mSixFixed);
         mBezierPoints[1].y = (float) (mCenterPoint.y - mSettledRadius * mSinx * mSixFixed);
-
         mBezierPoints[2].x = (float) (mCenterPoint.x - mSettledRadius * mCosx * mSixFixed);
         mBezierPoints[2].y = (float) (mCenterPoint.y + mSettledRadius * mSinx * mSixFixed);
-
         mBezierPoints[3].x = (float) (currentPointF.x + mRadius * mCosx * mSixFixed);
         mBezierPoints[3].y = (float) (currentPointF.y - mRadius * mSinx * mSixFixed);
-
         mBezierPoints[4].x = (float) (currentPointF.x - mRadius * mCosx * mSixFixed);
         mBezierPoints[4].y = (float) (currentPointF.y + mRadius * mSinx * mSixFixed);
     }
@@ -301,10 +301,17 @@ public class BezierBubbleView extends View {
         }
     }
 
-    public void setCurrentDismissingProgress(float currentDismissingProgress) {
-        this.currentDismissingProgress = currentDismissingProgress;
-        mCurrentDismissingBitmap = BitmapFactory.decodeResource(getResources(), mBitmapResources[(int) currentDismissingProgress]);
-        ViewCompat.postInvalidateOnAnimation(this);
+    public void setCurrentDismissingPosition(int currentDismissingPosition) {
+        if (currentDismissingPosition < 0) {
+            currentDismissingPosition = 0;
+        } else if (currentDismissingPosition >= mBitmapResources.length) {
+            currentDismissingPosition = mBitmapResources.length-1;
+        }
+        if (this.currentDismissingPosition != currentDismissingPosition) {
+            this.currentDismissingPosition = currentDismissingPosition;
+            mCurrentDismissingBitmap = BitmapFactory.decodeResource(getResources(), mBitmapResources[currentDismissingPosition]);
+            ViewCompat.postInvalidateOnAnimation(this);
+        }
     }
 
     private float mDownX = 0;
@@ -364,7 +371,7 @@ public class BezierBubbleView extends View {
         if (mDismissingObjectAnimator != null && mDismissingObjectAnimator.isRunning()) {
             mDismissingObjectAnimator.cancel();
         }
-        mDismissingObjectAnimator = ObjectAnimator.ofFloat(this, "currentDismissingProgress", 0.0f, 4.99f);
+        mDismissingObjectAnimator = ObjectAnimator.ofInt(this, "currentDismissingPosition", 0, 5);
         mDismissingObjectAnimator.setInterpolator(new FastOutLinearInInterpolator());
         mDismissingObjectAnimator.addListener(mAnimatorListener);
         mDismissingObjectAnimator.setDuration(300);
@@ -432,13 +439,16 @@ public class BezierBubbleView extends View {
      * 恢复状态
      */
     private void recoverStatus() {
+        mDownX = mDownY = 0;
+        mDistance = 0;
+        currentPointF.set(mRadius, mRadius);
         mBezierBubbleStatus = STATUS_IDLE;
         mHasBeyondCriticalDistance = false;
     }
 
     public void setTextValue(int value) {
         mTextValue = String.valueOf(value);
-        mDownX = mDownY = 0;
+        recoverStatus();
         ViewCompat.postInvalidateOnAnimation(this);
     }
 
@@ -465,12 +475,30 @@ public class BezierBubbleView extends View {
         return mBezierBubbleStatus;
     }
 
-    private static final int STATUS_DISMISSED = 0x00000000;//消失状态, 已经消失
-    private static final int STATUS_CONNECT = 0x00000001;//拖动, 随手指移动, 有贝塞尔曲线
-    private static final int STATUS_DRAG = 0x00000002;//拖动, 随手指移动, 无贝塞尔曲线
-    private static final int STATUS_RECOVER = 0x00000003;//手指松开, 正在恢复初始化状态
-    private static final int STATUS_DISMISSING = 0x00000004;//手指松开, 正在消失
-    private static final int STATUS_IDLE = 0x00000005;//空闲状态
+    /**
+     * 拖动, 随手指移动, 有贝塞尔曲线
+     */
+    private static final int STATUS_CONNECT = 0x00000001;
+    /**
+     * 拖动, 随手指移动, 无贝塞尔曲线
+     */
+    private static final int STATUS_DRAG = 0x00000002;
+    /**
+     * 手指松开, 正在恢复初始化状态
+     */
+    private static final int STATUS_RECOVER = 0x00000003;
+    /**
+     * 手指松开, 正在消失
+     */
+    private static final int STATUS_DISMISSING = 0x00000004;
+    /**
+     * 空闲状态
+     */
+    private static final int STATUS_IDLE = 0x00000005;
+    /**
+     * 消失状态, 已经消失
+     */
+    private static final int STATUS_DISMISSED = 0x00000000;
 
     @IntDef({STATUS_DISMISSED, STATUS_CONNECT, STATUS_DRAG, STATUS_RECOVER, STATUS_DISMISSING, STATUS_IDLE})
     @Retention(RetentionPolicy.SOURCE)
