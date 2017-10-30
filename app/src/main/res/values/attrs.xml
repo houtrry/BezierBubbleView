@@ -2,7 +2,7 @@
 <resources>
     <declare-styleable name="BezierBubbleView">
         <!--气泡的颜色-->
-        <attr name="bubble_color" format="dimension|reference"/>
+        <attr name="bubble_color" format="color|reference"/>
 
         <!--气泡中的文字-->
         <attr name="bubble_text" format="string|reference"/>
@@ -28,7 +28,7 @@
         <!--mControlPointProportion  控制点的位置, 从mCenterPoint到currentPointF的mControlPointProportion位置就是控制点的位置-->
         <attr name="control_point_proportion" format="float"/>
 
-        <!--如果控件宽高是warp_content, 可以使用bubble_padding来设置padding-->
+        <!--如果控件宽高是warp_content时, 可以使用bubble_padding来设置padding-->
         <attr name="bubble_padding" format="dimension|reference"/>
 
 

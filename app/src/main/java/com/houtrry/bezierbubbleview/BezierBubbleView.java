@@ -89,7 +89,9 @@ public class BezierBubbleView extends View {
      */
     private float mCriticalDistanceMultipleRadius = 6.0f;
 
-    /**当前消失动画的进度*/
+    /**
+     * 当前消失动画的进度
+     */
     private int currentDismissingPosition = -1;
     private int[] mBitmapResources = {R.mipmap.icon_dismissing1, R.mipmap.icon_dismissing2, R.mipmap.icon_dismissing3, R.mipmap.icon_dismissing4, R.mipmap.icon_dismissing5};
 
@@ -166,6 +168,8 @@ public class BezierBubbleView extends View {
     private int mHeightSize;
     private int mHeightMode;
 
+    private float mMeasureTextWidth = 0;
+
     private int measureWidth(int widthMeasureSpec) {
         int result = 0;
         mWidthSize = MeasureSpec.getSize(widthMeasureSpec);
@@ -173,8 +177,8 @@ public class BezierBubbleView extends View {
         if (mWidthMode == MeasureSpec.EXACTLY) {
             result = mWidthSize;
         } else {
-            final float measureTextWidth = mTextPaint.measureText(mTextValue);
-            result = (int) (measureTextWidth + mBubblePadding * 2.0f);
+            mMeasureTextWidth = mTextPaint.measureText(mTextValue);
+            result = (int) (mMeasureTextWidth + mBubblePadding * 2.0f + getPaddingLeft() + getPaddingRight());
         }
         return result;
     }
@@ -187,7 +191,7 @@ public class BezierBubbleView extends View {
             result = mHeightSize;
         } else {
             mTextPaint.getTextBounds(mTextValue, 0, mTextValue.length(), mTextRect);
-            result = mTextRect.height() + mBubblePadding * 2;
+            result = mTextRect.height() + mBubblePadding * 2 + getPaddingTop() + getPaddingBottom();
         }
         return result;
     }
@@ -206,14 +210,16 @@ public class BezierBubbleView extends View {
         drawBezier(canvas);
     }
 
+    private boolean mNeedDrawSettledCircle = false;
+
     /**
      * 画固定位置的圆
      *
      * @param canvas
      */
     private void drawSettledCircle(Canvas canvas) {
-        final boolean needDrawSettledCircle = (mBezierBubbleStatus == STATUS_CONNECT || mBezierBubbleStatus == STATUS_RECOVER) && !mHasBeyondCriticalDistance;
-        if (needDrawSettledCircle) {
+        mNeedDrawSettledCircle = (mBezierBubbleStatus == STATUS_CONNECT || mBezierBubbleStatus == STATUS_RECOVER) && !mHasBeyondCriticalDistance;
+        if (mNeedDrawSettledCircle) {
             mSettledRadius = (float) ((mMinSettledRadiusProportion + (1 - mDistance / mCriticalDistance) * (1 - mMinSettledRadiusProportion)) * mRadius);
             canvas.drawCircle(mCenterPoint.x, mCenterPoint.y, mSettledRadius, mPaint);
         }
@@ -230,14 +236,16 @@ public class BezierBubbleView extends View {
         }
     }
 
+    private boolean mNeedDrawBezierPart = false;
+
     /**
      * 画贝塞尔曲线
      *
      * @param canvas
      */
     private void drawBezier(Canvas canvas) {
-        final boolean needDrawBezierPart = (mBezierBubbleStatus == STATUS_CONNECT || mBezierBubbleStatus == STATUS_RECOVER) && !mHasBeyondCriticalDistance;
-        if (needDrawBezierPart) {
+        mNeedDrawBezierPart = (mBezierBubbleStatus == STATUS_CONNECT || mBezierBubbleStatus == STATUS_RECOVER) && !mHasBeyondCriticalDistance;
+        if (mNeedDrawBezierPart) {
             mBezierPath.reset();
             calculateBezierPoints();
             mBezierPath.moveTo(mBezierPoints[1].x, mBezierPoints[1].y);
@@ -305,7 +313,7 @@ public class BezierBubbleView extends View {
         if (currentDismissingPosition < 0) {
             currentDismissingPosition = 0;
         } else if (currentDismissingPosition >= mBitmapResources.length) {
-            currentDismissingPosition = mBitmapResources.length-1;
+            currentDismissingPosition = mBitmapResources.length - 1;
         }
         if (this.currentDismissingPosition != currentDismissingPosition) {
             this.currentDismissingPosition = currentDismissingPosition;
@@ -329,26 +337,21 @@ public class BezierBubbleView extends View {
             case MotionEvent.ACTION_MOVE: {
                 if (mBezierBubbleStatus != STATUS_DISMISSED) {
                     currentPointF.set(event.getX(), event.getY());
-
                     mDistance = Math.hypot(currentPointF.x - mCenterPoint.x, currentPointF.y - mCenterPoint.y);
-
                     if (mDistance > mCriticalDistance) {
                         mBezierBubbleStatus = STATUS_DRAG;
                         mHasBeyondCriticalDistance = true;
                     } else {
                         mBezierBubbleStatus = STATUS_CONNECT;
                     }
-
                     ViewCompat.postInvalidateOnAnimation(this);
                 }
                 break;
             }
             case MotionEvent.ACTION_UP: {
+                getParent().requestDisallowInterceptTouchEvent(false);
                 if (mBezierBubbleStatus != STATUS_DISMISSED) {
-                    getParent().requestDisallowInterceptTouchEvent(false);
-
                     currentPointF.set(event.getX(), event.getY());
-
                     mDistance = Math.hypot(currentPointF.x - mCenterPoint.x, currentPointF.y - mCenterPoint.y);
                     if (mDistance > mCriticalDistance) {
                         mBezierBubbleStatus = STATUS_DISMISSING;
@@ -360,6 +363,8 @@ public class BezierBubbleView extends View {
                 }
                 break;
             }
+            default:
+                break;
         }
         return true;
     }
@@ -452,8 +457,7 @@ public class BezierBubbleView extends View {
         ViewCompat.postInvalidateOnAnimation(this);
     }
 
-    @NonNull
-    public void setTextValue(String valueStr) {
+    public void setTextValue(@NonNull String valueStr) {
         mTextValue = valueStr;
         recoverStatus();
         ViewCompat.postInvalidateOnAnimation(this);
@@ -476,29 +480,29 @@ public class BezierBubbleView extends View {
     }
 
     /**
+     * 空闲状态
+     */
+    private static final int STATUS_IDLE = 0x00000001;
+    /**
      * 拖动, 随手指移动, 有贝塞尔曲线
      */
-    private static final int STATUS_CONNECT = 0x00000001;
+    private static final int STATUS_CONNECT = 0x00000002;
     /**
      * 拖动, 随手指移动, 无贝塞尔曲线
      */
-    private static final int STATUS_DRAG = 0x00000002;
+    private static final int STATUS_DRAG = 0x00000003;
     /**
      * 手指松开, 正在恢复初始化状态
      */
-    private static final int STATUS_RECOVER = 0x00000003;
+    private static final int STATUS_RECOVER = 0x00000004;
     /**
      * 手指松开, 正在消失
      */
-    private static final int STATUS_DISMISSING = 0x00000004;
-    /**
-     * 空闲状态
-     */
-    private static final int STATUS_IDLE = 0x00000005;
+    private static final int STATUS_DISMISSING = 0x00000005;
     /**
      * 消失状态, 已经消失
      */
-    private static final int STATUS_DISMISSED = 0x00000000;
+    private static final int STATUS_DISMISSED = 0x00000006;
 
     @IntDef({STATUS_DISMISSED, STATUS_CONNECT, STATUS_DRAG, STATUS_RECOVER, STATUS_DISMISSING, STATUS_IDLE})
     @Retention(RetentionPolicy.SOURCE)
