@@ -26,8 +26,8 @@
         android:layout_alignParentRight="true"
         android:layout_centerVertical="true"
         android:layout_marginRight="20dp"
-        bb:bubble_text="+99"
         bb:bubble_color="@android:color/holo_red_light"
+        bb:bubble_text="+99"
         bb:text_size="10sp"/>
 
     <View

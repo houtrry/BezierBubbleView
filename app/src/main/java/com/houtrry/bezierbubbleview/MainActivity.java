@@ -94,8 +94,8 @@ public class MainActivity extends AppCompatActivity {
 
             public RecyclerHolder(View itemView) {
                 super(itemView);
-                tvContent = itemView.findViewById(R.id.tvContent);
-                bezierBubbleView = itemView.findViewById(R.id.bezierBubbleView);
+                tvContent = (TextView) itemView.findViewById(R.id.tvContent);
+                bezierBubbleView = (BezierBubbleView) itemView.findViewById(R.id.bezierBubbleView);
             }
         }
     }

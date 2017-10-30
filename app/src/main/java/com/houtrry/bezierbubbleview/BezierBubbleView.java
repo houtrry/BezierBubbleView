@@ -39,23 +39,65 @@ import java.lang.annotation.RetentionPolicy;
 public class BezierBubbleView extends View {
 
     private static final String TAG = BezierBubbleView.class.getSimpleName();
-    private PointF currentPointF = new PointF();//当前手指的点的坐标
-    private int mBubbleColor = Color.parseColor("#ffe91e63");//气泡的颜色
-    private String mTextValue = String.valueOf(99);//气泡的文字内容
-    private int mTextColor = Color.WHITE;//文字的颜色
-    private int mTextSize = 30;//文字的大小
-    private int mWidth;//当前控件的宽
-    private int mHeight;//当前控件的高
+    /**
+     * 当前手指的点的坐标
+     */
+    private PointF currentPointF = new PointF();
+    /**
+     * 气泡的颜色
+     */
+    private int mBubbleColor = Color.parseColor("#ffe91e63");
+    /**
+     * 气泡的文字内容
+     */
+    private String mTextValue = String.valueOf(99);
+    /**
+     * 文字的颜色
+     */
+    private int mTextColor = Color.WHITE;
+    /**
+     * 文字的大小
+     */
+    private int mTextSize = 30;
+    /**
+     * 当前控件的宽
+     */
+    private int mWidth;
+    /**
+     * 当前控件的高
+     */
+    private int mHeight;
     private Paint mPaint;
     private Paint mTextPaint;
     private Rect mTextRect = new Rect();
-    private float mTextX;//绘制文字时, 文字左下角的x值
-    private float mTextY;//绘制文字时, 文字左下角的y值
-    private float mRadius;//移动圆的半径
-    private float mSettledRadius;//固定圆的半径
-    private PointF mCenterPoint = new PointF();//固定圆的圆心, 也是当前控件的中心点
-    private double mDistance;//当前位置到mCenterPoint的距离
-    private int mBezierBubbleStatus = STATUS_IDLE;//当前气泡的状态
+    /**
+     * 绘制文字时, 文字左下角的x值
+     */
+    private float mTextX;
+    /**
+     * 绘制文字时, 文字左下角的y值
+     */
+    private float mTextY;
+    /**
+     * 移动圆的半径
+     */
+    private float mRadius;
+    /**
+     * 固定圆的半径
+     */
+    private float mSettledRadius;
+    /**
+     * 固定圆的圆心, 也是当前控件的中心点
+     */
+    private PointF mCenterPoint = new PointF();
+    /**
+     * 当前位置到mCenterPoint的距离
+     */
+    private double mDistance;
+    /**
+     * 当前气泡的状态
+     */
+    private int mBezierBubbleStatus = STATUS_IDLE;
     private Path mBezierPath = new Path();
     private Bitmap mCurrentDismissingBitmap = null;
     /**
