@@ -411,6 +411,17 @@ public class BezierBubbleView extends View {
         return true;
     }
 
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        if (mDismissingObjectAnimator != null && mDismissingObjectAnimator.isRunning()) {
+            mDismissingObjectAnimator.cancel();
+        }
+        if (mRecoverObjectAnimator != null && mRecoverObjectAnimator.isRunning()) {
+            mRecoverObjectAnimator.cancel();
+        }
+    }
+
     /**
      * 开启消失的动画
      */
