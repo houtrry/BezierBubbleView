@@ -477,6 +477,7 @@ public class BezierBubbleView extends View {
         if (mBezierBubbleListener != null) {
             mBezierBubbleListener.dismissed(this);
         }
+        setVisibility(View.GONE);
     }
 
     /**
