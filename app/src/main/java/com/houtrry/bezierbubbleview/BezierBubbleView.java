@@ -1,6 +1,7 @@
 package com.houtrry.bezierbubbleview;
 
 import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.content.res.TypedArray;
@@ -446,12 +447,7 @@ public class BezierBubbleView extends View {
         mRecoverObjectAnimator.start();
     }
 
-    private Animator.AnimatorListener mAnimatorListener = new Animator.AnimatorListener() {
-        @Override
-        public void onAnimationStart(Animator animator) {
-
-        }
-
+    private Animator.AnimatorListener mAnimatorListener = new AnimatorListenerAdapter() {
         @Override
         public void onAnimationEnd(Animator animator) {
             if (mBezierBubbleStatus == STATUS_RECOVER) {
@@ -461,16 +457,6 @@ public class BezierBubbleView extends View {
                 mDismissingObjectAnimator.removeListener(mAnimatorListener);
                 dismissStatus();
             }
-        }
-
-        @Override
-        public void onAnimationCancel(Animator animator) {
-
-        }
-
-        @Override
-        public void onAnimationRepeat(Animator animator) {
-
         }
     };
 
